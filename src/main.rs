@@ -1,15 +1,15 @@
 use std::{collections::HashMap, env, fs};
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-
+fn filename_arg_parser(args: Vec<String>) -> Result<String, &'static str> {
     if args.len() != 2 {
-        panic!("Filename is not provided");
+        return Err("Filename is not provided");
     }
 
     let filename = args[1].clone();
+    return Ok(filename);
+}
 
-    let contents = fs::read_to_string(filename).expect("Could not read the file");
+fn get_word_frequency(contents: String) -> HashMap<char, u32> {
     let mut freq: HashMap<char, u32> = HashMap::new();
 
     for c in contents.chars() {
@@ -22,4 +22,13 @@ fn main() {
             }
         }
     }
+
+    return freq;
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    let filename = filename_arg_parser(args).unwrap();
+    let contents = fs::read_to_string(filename).expect("Could not read the file");
+    let freq = get_word_frequency(contents);
 }
