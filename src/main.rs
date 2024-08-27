@@ -1,9 +1,11 @@
 use std::{collections::HashMap, env, fs};
 
 use huffman_tree::HuffmanTree;
+use prefix_code::{PrefixCodeTable, TableMethods};
 
 mod huffman_node;
 mod huffman_tree;
+mod prefix_code;
 
 fn filename_arg_parser(args: Vec<String>) -> Result<String, &'static str> {
     if args.len() != 2 {
@@ -36,8 +38,7 @@ fn main() {
     let filename = filename_arg_parser(args).unwrap();
     let contents = fs::read_to_string(filename).expect("Could not read the file");
     let freq_table = get_word_frequency(contents);
-    let _tree = HuffmanTree::new(freq_table);
-    // dbg!(&tree.root);
-    // dbg!(&tree.right.unwrap().root);
-    // dbg!(&tree.left.unwrap().root);
+    let tree = HuffmanTree::new(freq_table);
+    let prefix_code_table = PrefixCodeTable::create(tree);
+    dbg!(prefix_code_table);
 }
