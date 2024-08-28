@@ -1,11 +1,21 @@
+/*
+In this step your goal is to write a header section to the output file
+(you’ll want a command line option to specify the filename).
+The header section will include enough information for your program to be decode the compressed file.
+
+One way of doing this is to write out the tree,
+another option is to write out the character frequency table.
+Don’t forget you’ll need some way of knowing when the header ends and when the compressed data starts.
+ */
+
 use std::{collections::HashMap, env, fs};
 
-use huffman_tree::HuffmanTree;
-use prefix_code::{PrefixCodeTable, TableMethods};
+mod huffman;
 
-mod huffman_node;
-mod huffman_tree;
-mod prefix_code;
+use huffman::prefix_code::TableMethods;
+
+pub use crate::huffman::huffman_tree::HuffmanTree;
+pub use crate::huffman::prefix_code::PrefixCodeTable;
 
 fn filename_arg_parser(args: Vec<String>) -> Result<String, &'static str> {
     if args.len() != 2 {
@@ -31,6 +41,11 @@ fn get_word_frequency(contents: String) -> HashMap<char, u32> {
     }
 
     return freq;
+}
+
+fn write_header_to_output(filename: String, freq_table: PrefixCodeTable) {
+    //TODO: get string representation of prefix table and write it as
+    //      a header in the output file
 }
 
 fn main() {

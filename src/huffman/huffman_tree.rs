@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::huffman_node::HuffmanNode;
+use super::huffman_node::HuffmanNode;
 
 #[derive(PartialEq, PartialOrd, Eq, Debug)]
 pub struct HuffmanTree {

@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 
-use crate::huffman_tree::HuffmanTree;
+use super::huffman_tree::HuffmanTree;
 
 pub type PrefixCodeTable = HashMap<char, u64>;
 
