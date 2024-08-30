@@ -6,6 +6,7 @@ pub type PrefixCodeTable = HashMap<char, u64>;
 
 pub trait TableMethods {
     fn create(tree: HuffmanTree) -> Self;
+    fn stringify(&self) -> String;
 }
 
 impl TableMethods for PrefixCodeTable {
@@ -47,5 +48,13 @@ impl TableMethods for PrefixCodeTable {
         }
 
         return table;
+    }
+
+    fn stringify(&self) -> String {
+        return self
+            .iter()
+            .map(|(k, v)| format!("{}={}", k, v))
+            .collect::<Vec<String>>()
+            .join(",");
     }
 }
