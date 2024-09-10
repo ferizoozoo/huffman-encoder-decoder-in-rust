@@ -2,7 +2,7 @@ use std::collections::{HashMap, VecDeque};
 
 use super::huffman_tree::HuffmanTree;
 
-pub type PrefixCodeTable = HashMap<char, u64>;
+pub type PrefixCodeTable = HashMap<char, String>;
 
 pub trait TableMethods {
     fn create(tree: HuffmanTree) -> Self;
@@ -12,39 +12,39 @@ pub trait TableMethods {
 impl TableMethods for PrefixCodeTable {
     fn create(tree: HuffmanTree) -> Self {
         let mut table = PrefixCodeTable::new();
-        let mut prefix: u64 = 0;
+        let mut prefix = String::new();
 
         // breadth-first search
         let mut queue = VecDeque::new();
-        queue.push_back(&tree);
+        queue.push_back((&tree, prefix.clone()));
 
-        while queue.len() > 0 {
-            match queue.pop_front() {
-                Some(current) => {
-                    match &current.left {
-                        Some(left) => {
-                            if let Some(left_element) = left.root.as_ref().unwrap().element {
-                                table.insert(left_element, prefix);
-                            }
-                            queue.push_back(left);
-                        }
-                        None => {}
+        while let Some((current, mut current_prefix)) = queue.pop_front() {
+            match &current.left {
+                Some(left) => {
+                    let mut left_prefix = current_prefix.clone();
+                    left_prefix.push('0');
+
+                    if let Some(left_element) = left.root.as_ref().unwrap().element {
+                        table.insert(left_element, left_prefix.clone());
                     }
 
-                    match &current.right {
-                        Some(right) => {
-                            if let Some(right_element) = right.root.as_ref().unwrap().element {
-                                prefix |= 1;
-                                table.insert(right_element, prefix);
-                            }
-                            queue.push_back(right);
-                        }
-                        None => {}
-                    }
+                    queue.push_back((left, left_prefix));
                 }
                 None => {}
             }
-            prefix <<= 1;
+
+            match &current.right {
+                Some(right) => {
+                    current_prefix.push('1');
+
+                    if let Some(right_element) = right.root.as_ref().unwrap().element {
+                        table.insert(right_element, current_prefix.clone());
+                    }
+
+                    queue.push_back((right, current_prefix.clone()));
+                }
+                None => {}
+            }
         }
 
         return table;
