@@ -1,6 +1,12 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, fs, rc::Rc};
 
-use huffman_encoder_decoder_in_rust::{huffman_node::HuffmanNode, huffman_tree::HuffmanTree};
+use huffman_encoder_decoder_in_rust::{
+    codec::{Codec, Decoder, Encoder},
+    huffman_node::HuffmanNode,
+    huffman_tree::HuffmanTree,
+    prefix_code::{PrefixCodeTable, TableMethods},
+    word_frequency::get_word_frequency,
+};
 
 #[test]
 fn it_gives_correct_tree() {
@@ -200,4 +206,41 @@ fn it_gives_correct_tree() {
             .element
             .unwrap(),
     )
+}
+
+#[test]
+fn header_parsed_correctly_from_encoded_file() {
+    let input_filename = String::from("135-0.txt");
+    let output_filename = String::from("test_encode.enc");
+
+    let contents = fs::read_to_string(&input_filename).expect("Could not read the file");
+    let freq_table = get_word_frequency(contents);
+    let tree = HuffmanTree::new(freq_table);
+
+    let expected_prefix_code_table = PrefixCodeTable::create(tree);
+    match Codec::encode(
+        expected_prefix_code_table.clone(),
+        input_filename.clone(),
+        output_filename.clone(),
+    ) {
+        Ok(r) => (),
+        Err(e) => panic!("{}", e),
+    }
+
+    match Codec::parse_header_into_prefix_code_table(output_filename) {
+        Ok(actual_prefix_code_table) => {
+            for (key, expected_value) in &expected_prefix_code_table {
+                if let Some(actual_value) = actual_prefix_code_table.get(key) {
+                    assert_eq!(
+                        actual_value, expected_value,
+                        "Don't have the same values, actual: {}, expected: {}",
+                        actual_value, expected_value
+                    );
+                }
+            }
+
+            assert_eq!(actual_prefix_code_table, expected_prefix_code_table);
+        }
+        Err(e) => panic!("{}", e),
+    }
 }

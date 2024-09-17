@@ -7,6 +7,7 @@ pub type PrefixCodeTable = HashMap<char, String>;
 pub trait TableMethods {
     fn create(tree: HuffmanTree) -> Self;
     fn stringify(&self) -> String;
+    fn to_table(s: String) -> Self;
 }
 
 impl TableMethods for PrefixCodeTable {
@@ -55,6 +56,19 @@ impl TableMethods for PrefixCodeTable {
             .iter()
             .map(|(k, v)| format!("{}={}", k, v))
             .collect::<Vec<String>>()
-            .join(",");
+            .join(" ");
+    }
+
+    fn to_table(s: String) -> Self {
+        let mut prefix_table = Self::new();
+        s.split(" ").into_iter().for_each(|kv| {
+            let mut kvs = kv.split("=");
+            if let (Some(key), Some(value)) = (kvs.next(), kvs.next()) {
+                if let Some(c) = key.chars().next() {
+                    prefix_table.insert(c, value.trim().to_string());
+                }
+            }
+        });
+        return prefix_table;
     }
 }
