@@ -8,6 +8,7 @@ pub trait TableMethods {
     fn create(tree: HuffmanTree) -> Self;
     fn stringify(&self) -> String;
     fn to_table(s: String) -> Self;
+    fn reverse(&self) -> HashMap<String, char>;
 }
 
 impl TableMethods for PrefixCodeTable {
@@ -70,5 +71,12 @@ impl TableMethods for PrefixCodeTable {
             }
         });
         return prefix_table;
+    }
+
+    fn reverse(&self) -> HashMap<String, char> {
+        return self
+            .iter()
+            .map(|(key, value)| (value.to_owned(), *key))
+            .collect::<HashMap<String, char>>();
     }
 }

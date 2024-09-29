@@ -1,9 +1,4 @@
-/*
-In this step your goal is to read in the header of the encoded file and rebuild the prefix table ready to decode the text.
-In essence you’re going to do the reverse of step 4.
- */
-
-use std::{collections::HashMap, env, fs};
+use std::{env, fs};
 
 mod huffman;
 
@@ -44,20 +39,20 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let input_filename = filename_arg_parser(args.clone()).unwrap();
     let output_filename = option_arg_parser(args).unwrap();
+    let decode_filename = String::from("decoded_output.dec");
     let contents = fs::read_to_string(&input_filename).expect("Could not read the file");
     let freq_table = get_word_frequency(contents);
     let tree = HuffmanTree::new(freq_table);
     let prefix_code_table = PrefixCodeTable::create(tree);
     match Codec::encode(
-        prefix_code_table,
+        prefix_code_table.clone(),
         input_filename.clone(),
         output_filename.clone(),
     ) {
-        Ok(r) => (),
+        Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }
-    let decoded_filename = String::from("decoded.dec");
-    match Codec::parse_header_into_prefix_code_table(output_filename) {
+    match Codec::decode(output_filename.clone(), decode_filename) {
         Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }
