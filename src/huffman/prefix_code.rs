@@ -5,20 +5,19 @@ use super::huffman_tree::HuffmanTree;
 pub type PrefixCodeTable = HashMap<char, String>;
 
 pub trait TableMethods {
-    fn create(tree: HuffmanTree) -> Self;
+    fn create(tree: &HuffmanTree) -> Self;
     fn stringify(&self) -> String;
     fn to_table(s: String) -> Self;
     fn reverse(&self) -> HashMap<String, char>;
 }
 
 impl TableMethods for PrefixCodeTable {
-    fn create(tree: HuffmanTree) -> Self {
+    fn create(tree: &HuffmanTree) -> Self {
         let mut table = PrefixCodeTable::new();
-        let mut prefix = String::new();
 
         // breadth-first search
         let mut queue = VecDeque::new();
-        queue.push_back((&tree, prefix.clone()));
+        queue.push_back((tree, String::new()));
 
         while let Some((current, mut current_prefix)) = queue.pop_front() {
             match &current.left {
@@ -57,16 +56,16 @@ impl TableMethods for PrefixCodeTable {
             .iter()
             .map(|(k, v)| format!("{}={}", k, v))
             .collect::<Vec<String>>()
-            .join(" ");
+            .join("|");
     }
 
     fn to_table(s: String) -> Self {
         let mut prefix_table = Self::new();
-        s.split(" ").into_iter().for_each(|kv| {
+        s.split("|").into_iter().for_each(|kv| {
             let mut kvs = kv.split("=");
             if let (Some(key), Some(value)) = (kvs.next(), kvs.next()) {
                 if let Some(c) = key.chars().next() {
-                    prefix_table.insert(c, value.trim().to_string());
+                    prefix_table.insert(c, value.to_string());
                 }
             }
         });
@@ -74,9 +73,6 @@ impl TableMethods for PrefixCodeTable {
     }
 
     fn reverse(&self) -> HashMap<String, char> {
-        return self
-            .iter()
-            .map(|(key, value)| (value.to_owned(), *key))
-            .collect::<HashMap<String, char>>();
+        return self.iter().map(|(ch, code)| (code.clone(), *ch)).collect();
     }
 }

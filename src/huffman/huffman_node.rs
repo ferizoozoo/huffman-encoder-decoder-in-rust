@@ -8,7 +8,15 @@ pub struct HuffmanNode {
 
 impl Ord for HuffmanNode {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.weight.cmp(&self.weight)
+        other
+            .weight
+            .cmp(&self.weight)
+            .then_with(|| match (&self.element, &other.element) {
+                (Some(s), Some(o)) => s.cmp(o),
+                (Some(_), None) => Ordering::Greater,
+                (None, Some(_)) => Ordering::Less,
+                _ => Ordering::Equal,
+            })
     }
 }
 

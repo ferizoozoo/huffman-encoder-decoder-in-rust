@@ -43,7 +43,7 @@ fn main() {
     let contents = fs::read_to_string(&input_filename).expect("Could not read the file");
     let freq_table = get_word_frequency(contents);
     let tree = HuffmanTree::new(freq_table);
-    let prefix_code_table = PrefixCodeTable::create(tree);
+    let prefix_code_table = PrefixCodeTable::create(&tree);
     match Codec::encode(
         prefix_code_table.clone(),
         input_filename.clone(),
@@ -52,7 +52,7 @@ fn main() {
         Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }
-    match Codec::decode(output_filename.clone(), decode_filename) {
+    match Codec::decode(output_filename.clone(), decode_filename, tree.depth()) {
         Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }

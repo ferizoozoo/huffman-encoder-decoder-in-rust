@@ -15,10 +15,11 @@ pub struct HuffmanTree {
 
 impl Ord for HuffmanTree {
     fn cmp(&self, other: &Self) -> Ordering {
-        if let (Some(s_root), Some(o_root)) = (&self.root, &other.root) {
-            s_root.cmp(&o_root)
-        } else {
-            Ordering::Equal
+        match (&self.root, &other.root) {
+            (Some(s), Some(o)) => s.cmp(o),
+            (Some(_), None) => Ordering::Greater,
+            (None, Some(_)) => Ordering::Less,
+            _ => Ordering::Equal,
         }
     }
 }
@@ -50,7 +51,7 @@ impl HuffmanTree {
         return queue.pop().unwrap();
     }
 
-    pub fn merge(first: Rc<HuffmanTree>, second: Rc<HuffmanTree>) -> Self {
+    fn merge(first: Rc<HuffmanTree>, second: Rc<HuffmanTree>) -> Self {
         let w1 = first.root.as_ref().unwrap().weight;
         let w2 = second.root.as_ref().unwrap().weight;
 
@@ -64,5 +65,12 @@ impl HuffmanTree {
             left: Some(first),
             right: Some(second),
         }
+    }
+
+    pub fn depth(&self) -> usize {
+        if let (Some(left), Some(right)) = (self.left.as_ref(), self.right.as_ref()) {
+            return 1 + usize::max(left.depth(), right.depth());
+        }
+        return 0;
     }
 }
