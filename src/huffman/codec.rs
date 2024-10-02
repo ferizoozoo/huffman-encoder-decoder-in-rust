@@ -6,7 +6,7 @@ use std::{
 
 use super::prefix_code::{PrefixCodeTable, TableMethods};
 
-const BUFFER_SIZE: usize = 1024;
+const BUFFER_SIZE: usize = 8192;
 const HEADER_END_BYTE: u8 = b'\0';
 
 pub struct Codec;
@@ -28,6 +28,7 @@ impl Codec {
         let mut input = File::open(input_filename)?;
         let mut output = File::create(output_filename)?;
         let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
+        let mut leftover = Vec::new();
 
         let header = Codec::get_header(prefix_code_table.clone());
         output.write_all(&header)?;
@@ -39,42 +40,51 @@ impl Codec {
                 break;
             }
 
-            let mut encoded_data = String::new();
+            leftover.extend_from_slice(&buffer[..limit]);
 
-            buffer.iter().for_each(|b| {
-                let character = *b as char;
-                if let Some(encoded_char) = prefix_code_table.get(&character) {
-                    encoded_data.push_str(encoded_char);
+            let valid_up_to = match std::str::from_utf8(&leftover) {
+                Ok(valid_str) => {
+                    let mut encoded_data = String::new();
+
+                    valid_str.chars().for_each(|character| {
+                        if let Some(encoded_char) = prefix_code_table.get(&character) {
+                            encoded_data.push_str(encoded_char);
+                        }
+                    });
+
+                    let encoded_data_bytes = encoded_data
+                        .as_bytes()
+                        .chunks(8)
+                        .map(|chunk| {
+                            let chunk_str = std::str::from_utf8(chunk).unwrap();
+                            u8::from_str_radix(chunk_str, 2).unwrap()
+                        })
+                        .collect::<Vec<u8>>();
+
+                    output.write_all(&encoded_data_bytes)?;
+
+                    leftover.clear();
+                    leftover.len()
                 }
-            });
+                Err(e) => e.valid_up_to(),
+            };
 
-            let encoded_data_bytes = encoded_data
-                .as_bytes()
-                .chunks(8)
-                .map(|chunk| {
-                    let chunk_str = std::str::from_utf8(chunk).unwrap();
-                    u8::from_str_radix(chunk_str, 2).unwrap()
-                })
-                .collect::<Vec<u8>>();
-
-            output.write_all(&encoded_data_bytes)?;
+            let remainder = leftover.split_off(valid_up_to);
+            leftover.clear();
+            leftover.extend_from_slice(&remainder);
         }
 
         return Ok(());
     }
 
-    pub fn decode(
-        input_filename: String,
-        output_filename: String,
-        max_bits: usize,
-    ) -> std::io::Result<()> {
+    pub fn decode(input_filename: String, output_filename: String) -> std::io::Result<()> {
         let input = File::open(input_filename)?;
         let output = File::create(output_filename)?;
         let mut reader = BufReader::new(input);
         let mut writer = BufWriter::new(output);
 
         let reversed_table = Codec::decode_header(&mut reader)?;
-        Codec::decode_body(&mut reader, &mut writer, reversed_table, max_bits)
+        Codec::decode_body(&mut reader, &mut writer, reversed_table)
     }
 
     fn decode_header(reader: &mut BufReader<File>) -> std::io::Result<HashMap<String, char>> {
@@ -96,7 +106,6 @@ impl Codec {
         reader: &mut BufReader<File>,
         writer: &mut BufWriter<File>,
         reversed_table: HashMap<String, char>,
-        max_bits: usize,
     ) -> std::io::Result<()> {
         let mut key = String::new();
 
@@ -117,10 +126,6 @@ impl Codec {
                         let mut buf = [0; 4];
                         let ch_utf8 = ch.encode_utf8(&mut buf);
                         writer.write_all(ch_utf8.as_bytes())?;
-                        key.clear();
-                    }
-
-                    if key.len() > max_bits {
                         key.clear();
                     }
                 }

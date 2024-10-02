@@ -52,7 +52,7 @@ fn main() {
         Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }
-    match Codec::decode(output_filename.clone(), decode_filename, tree.depth()) {
+    match Codec::decode(output_filename.clone(), decode_filename) {
         Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }
