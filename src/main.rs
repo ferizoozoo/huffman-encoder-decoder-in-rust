@@ -1,39 +1,15 @@
 use std::{env, fs};
 
 mod huffman;
+mod utils;
 
 use huffman::codec::Codec;
 use huffman::prefix_code::TableMethods;
 use huffman::word_frequency::get_word_frequency;
+use utils::arg_parser::{filename_arg_parser, option_arg_parser};
 
 pub use crate::huffman::huffman_tree::HuffmanTree;
 pub use crate::huffman::prefix_code::PrefixCodeTable;
-
-// TODO: this should be placed into a utility module or something
-fn filename_arg_parser(args: Vec<String>) -> Result<String, &'static str> {
-    if args.len() < 2 {
-        return Err("Filename is not provided");
-    }
-
-    let filename = args[1].clone();
-    return Ok(filename);
-}
-
-// TODO: this should be placed into a utility module or something
-fn option_arg_parser(args: Vec<String>) -> Result<String, &'static str> {
-    const OUTPUT_FILE_OPTION: &str = "-o";
-
-    if args.len() < 4 {
-        return Err("Output option and filename are not provided");
-    }
-
-    let index = args
-        .iter()
-        .position(|arg| arg == OUTPUT_FILE_OPTION)
-        .unwrap();
-    let filename = args[index + 1].clone();
-    return Ok(filename);
-}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -45,7 +21,7 @@ fn main() {
     let tree = HuffmanTree::new(freq_table);
     let prefix_code_table = PrefixCodeTable::create(&tree);
     match Codec::encode(
-        prefix_code_table.clone(),
+        &prefix_code_table,
         input_filename.clone(),
         output_filename.clone(),
     ) {

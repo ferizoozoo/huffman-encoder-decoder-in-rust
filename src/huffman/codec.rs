@@ -12,7 +12,7 @@ const HEADER_END_BYTE: u8 = b'\0';
 pub struct Codec;
 
 impl Codec {
-    fn get_header(prefix_code_table: PrefixCodeTable) -> Vec<u8> {
+    fn create_header_from_prefix_table(prefix_code_table: &PrefixCodeTable) -> Vec<u8> {
         return [
             prefix_code_table.stringify().as_bytes(),
             &HEADER_END_BYTE.to_le_bytes(),
@@ -21,7 +21,7 @@ impl Codec {
     }
 
     pub fn encode(
-        prefix_code_table: PrefixCodeTable, // TODO: should receive reference instead of value
+        prefix_code_table: &PrefixCodeTable, // TODO: should receive reference instead of value
         input_filename: String,
         output_filename: String,
     ) -> std::io::Result<()> {
@@ -30,7 +30,7 @@ impl Codec {
         let mut buffer: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
         let mut leftover = Vec::new();
 
-        let header = Codec::get_header(prefix_code_table.clone());
+        let header = Codec::create_header_from_prefix_table(&prefix_code_table);
         output.write_all(&header)?;
 
         loop {
@@ -44,29 +44,19 @@ impl Codec {
 
             let valid_up_to = match std::str::from_utf8(&leftover) {
                 Ok(valid_str) => {
-                    let mut encoded_data = String::new();
-
-                    valid_str.chars().for_each(|character| {
-                        if let Some(encoded_char) = prefix_code_table.get(&character) {
-                            encoded_data.push_str(encoded_char);
-                        }
-                    });
-
-                    let encoded_data_bytes = encoded_data
-                        .as_bytes()
-                        .chunks(8)
-                        .map(|chunk| {
-                            let chunk_str = std::str::from_utf8(chunk).unwrap();
-                            u8::from_str_radix(chunk_str, 2).unwrap()
-                        })
-                        .collect::<Vec<u8>>();
-
-                    output.write_all(&encoded_data_bytes)?;
-
+                    Codec::process_valid_utf8(&valid_str, &prefix_code_table, &mut output)?;
                     leftover.clear();
                     leftover.len()
                 }
-                Err(e) => e.valid_up_to(),
+                Err(e) => {
+                    let valid_str = &leftover[..e.valid_up_to()];
+                    Codec::process_valid_utf8(
+                        std::str::from_utf8(valid_str).unwrap(),
+                        &prefix_code_table,
+                        &mut output,
+                    )?;
+                    e.valid_up_to()
+                }
             };
 
             let remainder = leftover.split_off(valid_up_to);
@@ -75,6 +65,33 @@ impl Codec {
         }
 
         return Ok(());
+    }
+
+    fn process_valid_utf8(
+        valid_str: &str,
+        prefix_code_table: &PrefixCodeTable,
+        output: &mut File,
+    ) -> std::io::Result<()> {
+        let mut encoded_data = String::new();
+
+        valid_str.chars().for_each(|character| {
+            if let Some(encoded_char) = prefix_code_table.get(&character) {
+                encoded_data.push_str(encoded_char);
+            }
+        });
+
+        let encoded_data_bytes = encoded_data
+            .as_bytes()
+            .chunks(8)
+            .map(|chunk| {
+                let chunk_str = std::str::from_utf8(chunk).unwrap();
+                u8::from_str_radix(chunk_str, 2).unwrap()
+            })
+            .collect::<Vec<u8>>();
+
+        output.write_all(&encoded_data_bytes)?;
+
+        Ok(())
     }
 
     pub fn decode(input_filename: String, output_filename: String) -> std::io::Result<()> {
