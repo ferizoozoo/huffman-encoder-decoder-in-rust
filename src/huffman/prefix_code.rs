@@ -4,6 +4,8 @@ use super::huffman_tree::HuffmanTree;
 
 pub type PrefixCodeTable = HashMap<char, String>;
 
+const DELIMITER: &str = "/|\\";
+
 pub trait TableMethods {
     fn create(tree: &HuffmanTree) -> Self;
     fn stringify(&self) -> String;
@@ -56,12 +58,12 @@ impl TableMethods for PrefixCodeTable {
             .iter()
             .map(|(k, v)| format!("{}={}", k, v))
             .collect::<Vec<String>>()
-            .join("|");
+            .join(DELIMITER);
     }
 
     fn to_table(s: String) -> Self {
         let mut prefix_table = Self::new();
-        s.split("|").into_iter().for_each(|kv| {
+        s.split(DELIMITER).into_iter().for_each(|kv| {
             let mut kvs = kv.split("=");
             if let (Some(key), Some(value)) = (kvs.next(), kvs.next()) {
                 if let Some(c) = key.chars().next() {

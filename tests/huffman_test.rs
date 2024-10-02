@@ -1,12 +1,6 @@
-use std::{collections::HashMap, fs, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
-use huffman_encoder_decoder_in_rust::{
-    codec::{Codec, Decoder, Encoder},
-    huffman_node::HuffmanNode,
-    huffman_tree::HuffmanTree,
-    prefix_code::{PrefixCodeTable, TableMethods},
-    word_frequency::get_word_frequency,
-};
+use huffman_encoder_decoder_in_rust::{huffman_node::HuffmanNode, huffman_tree::HuffmanTree};
 
 #[test]
 fn it_gives_correct_tree() {

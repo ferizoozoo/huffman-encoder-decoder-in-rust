@@ -2,7 +2,7 @@ use std::{env, fs};
 
 mod huffman;
 
-use huffman::codec::{Codec, Decoder, Encoder};
+use huffman::codec::Codec;
 use huffman::prefix_code::TableMethods;
 use huffman::word_frequency::get_word_frequency;
 
