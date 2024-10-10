@@ -28,7 +28,8 @@ fn main() {
         Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }
-    match Codec::decode(output_filename.clone(), decode_filename) {
+    let padding_byte_count = Codec::get_padding_byte_count(&input_filename).unwrap();
+    match Codec::decode(output_filename.clone(), decode_filename, padding_byte_count) {
         Ok(_r) => (),
         Err(e) => panic!("{}", e),
     }

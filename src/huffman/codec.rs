@@ -20,6 +20,11 @@ impl Codec {
         .concat();
     }
 
+    pub fn get_padding_byte_count(filename: &String) -> std::io::Result<usize> {
+        let reader = File::open(filename)?;
+        return Ok((reader.metadata()?.len() % 8) as usize);
+    }
+
     pub fn encode(
         prefix_code_table: &PrefixCodeTable, // TODO: should receive reference instead of value
         input_filename: String,
@@ -94,14 +99,18 @@ impl Codec {
         Ok(())
     }
 
-    pub fn decode(input_filename: String, output_filename: String) -> std::io::Result<()> {
+    pub fn decode(
+        input_filename: String,
+        output_filename: String,
+        padding_byte_count: usize,
+    ) -> std::io::Result<()> {
         let input = File::open(input_filename)?;
         let output = File::create(output_filename)?;
         let mut reader = BufReader::new(input);
         let mut writer = BufWriter::new(output);
 
         let reversed_table = Codec::decode_header(&mut reader)?;
-        Codec::decode_body(&mut reader, &mut writer, reversed_table)
+        Codec::decode_body(&mut reader, &mut writer, reversed_table, padding_byte_count)
     }
 
     fn decode_header(reader: &mut BufReader<File>) -> std::io::Result<HashMap<String, char>> {
@@ -123,29 +132,41 @@ impl Codec {
         reader: &mut BufReader<File>,
         writer: &mut BufWriter<File>,
         reversed_table: HashMap<String, char>,
+        padding_byte_count: usize,
     ) -> std::io::Result<()> {
         let mut key = String::new();
-
         let mut buffer = [0; BUFFER_SIZE];
+        let mut total_bits_read = 0; // Track the total number of bits read
+
         loop {
             let limit = reader.read(&mut buffer)?;
             if limit == 0 {
-                break;
+                break; // End of file
             }
 
-            for byte in buffer.iter().take(limit) {
-                for bit_pos in 0..8 {
-                    let bit = (byte >> (7 - bit_pos)) & 1;
-                    key.push(if bit == 1 { '1' } else { '0' });
+            for (i, byte) in buffer.iter().take(limit).enumerate() {
+                // Determine how many bits to read from the current byte
+                let bits_to_read = if i == limit - 1 {
+                    // Last byte, adjust for padding
+                    8 - padding_byte_count // Read only valid bits in the last byte
+                } else {
+                    8 // Read all bits in other bytes
+                };
 
+                for bit_pos in 0..bits_to_read {
+                    let bit = (byte >> (7 - bit_pos)) & 1; // Extract each bit
+                    key.push(if bit == 1 { '1' } else { '0' }); // Append to key
+
+                    // Check if we have a complete character in the reversed table
                     if let Some(&ch) = reversed_table.get(&key) {
-                        // encode ch as a UTF-8 character
+                        // Encode character as a UTF-8 sequence and write to output
                         let mut buf = [0; 4];
                         let ch_utf8 = ch.encode_utf8(&mut buf);
-                        writer.write_all(ch_utf8.as_bytes())?;
-                        key.clear();
+                        writer.write_all(ch_utf8.as_bytes())?; // Write the encoded character
+                        key.clear(); // Reset key after writing
                     }
                 }
+                total_bits_read += bits_to_read; // Increment total bits read
             }
         }
 
